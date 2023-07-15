@@ -6,6 +6,7 @@ use nom::{
     Finish, IResult,
 };
 use itertools::Itertools;
+use smallvec::SmallVec;
 
 fn main() {
     let mut lines = include_str!("input.txt").lines();
@@ -82,11 +83,14 @@ fn transpose_reverse<T>(v: Vec<Vec<Option<T>>>) -> Vec<Vec<T>> {
     let mut iters: Vec<_> = v.into_iter().map(|n| n.into_iter()).collect();
     (0..len)
         .map(|_| {
-            iters
+            let mut vec = Vec::with_capacity(256);
+            vec.extend(
+                iters
                 .iter_mut()
                 .rev()
                 .filter_map(|n| n.next().unwrap())
-                .collect::<Vec<T>>()
+            );
+            vec
         })
         .collect()
 }
@@ -132,9 +136,8 @@ impl std::fmt::Debug for Piles {
 
 impl Piles {
     fn apply(&mut self, ins: Instruction) {
-        for _ in 0..ins.quantity {
-            let el = self.0[ins.src].pop().unwrap();
-            self.0[ins.destination].push(el);
+        for krate in (0..ins.quantity).map(|_| self.0[ins.src].pop().unwrap()).collect::<SmallVec<[_; 256]>>().into_iter().rev() {
+            self.0[ins.destination].push(krate);
         }
     }
 }
